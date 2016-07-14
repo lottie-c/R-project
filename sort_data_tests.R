@@ -1,4 +1,4 @@
-source('~/Documents/Masters/Project/R/test_functions.R')
+source('~/Documents/Masters/Project/R/code/test_functions.R')
 
 # read in data 
 dualPivotSort_100<- scan("~/Documents/Masters/Project/R/data_ns/sort/sorting.Sort.dualPivotSort_100.txt")
@@ -80,26 +80,16 @@ lines(edf_is_1000,
         col.01line = "gray70", pch = 19, col = "blue", verticals = "TRUE")
 
 plot(edf_ps_5000,main = "n = 5000",
-     col.01line = "gray70", pch = 19, col = "red", xlim=c(-1, 15000000), verticals = "TRUE")
+     col.01line = "gray70", pch = 19, col = "red", xlim=c(-1, 15000000), 
+     verticals = "TRUE")
 lines(edf_is_5000,  
       col.01line = "gray70", pch = 19, col = "blue", verticals = "TRUE")
 
-density_plot <- function(input_data, input_names){
-  length_input<- length(input_data)
-  for (i in 1:length_input ){
-    data <- input_data[[i]]
-    d<-density(data)
-    plot(d , main = paste("Density of ", input_names[[i]]),
-         xlab = "execution time (ns)", ylab = "Density", col = "red", 
-         xlim=c(0,max(data) + max(data)/100))
-  }
-} 
-
 sampleSizes <- c(100,500,1000,5000,10000)
-table <- p_value_table(dualPivotSort_100,  insertionSort_100, 500,1 ,1)
+table <- p_value_table(dualPivotSort_100,  insertionSort_100, "<=", 500,1 ,1)
 table
 
-a <- p_tables_different_n( ps_data, is_data, ps_names, is_names, sampleSizes)
+a <-combine_p_tables( is_data, is_data, is_names, is_names, "=" , sampleSizes)
 
 a
 

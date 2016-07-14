@@ -6,7 +6,7 @@ library(gridExtra)
 library(grid)
 library(gtable)
 #sample size will be one of 500, 1000, 2000, 10000, 50000
-ks_test <- function( x, y, sampleSize, lambdaX = 1, lambdaY = 1){
+ks_test <- function( x, y, sign, sampleSize,  lambdaX = 1, lambdaY = 1){
   
   if(length(y) < length(x)){
     data_length <- length(y)
@@ -17,26 +17,10 @@ ks_test <- function( x, y, sampleSize, lambdaX = 1, lambdaY = 1){
     stop("sampleSize must be less than or equal to the length of the data ")
   }
   
-  #x<-x[1:sampleSize]
-  # y<-y[1:sampleSize]
+  signs <- c("<", "<=", "=", ">=", ">")
   
-  x<-x*lambdaX
-  y<-y*lambdaY
-  
-  # "greater" tests with alternative that x lies to left of y 
-  p_value <- ks.test(x,y, alternative = "greater")$p.value
-  return (p_value)
-}
-
-t_test <- function( x, y, sampleSize, lambdaX = 1, lambdaY = 1){
-  
-  if(length(y) < length(x)){
-    data_length <- length(y)
-  }else{
-    data_length <- length(x)
-  }
-  if (sampleSize > data_length){
-    stop("sampleSize must be less than or equal to the length of the data ")
+  if (!(sign %in% signs)){
+    stop( 'sign must be one of "<", "<=", "=", ">=", ">"')
   }
   
   x<-x[1:sampleSize]
@@ -45,12 +29,28 @@ t_test <- function( x, y, sampleSize, lambdaX = 1, lambdaY = 1){
   x<-x*lambdaX
   y<-y*lambdaY
   
-  # "less" tests with alternative that x has a lower mean than y 
-  p_value <- t.test( x, y, alternative = "less")$p.value
+  if (sign == "="){
+    p_value <- ks.test(x,y)$p.value
+  }else if(sign == "<"){
+    # "greater" tests with alternative that x lies to left of y 
+    p_value <- ks.test(x,y, alternative = "greater")$p.value
+  }else if(sign == "<="){
+    eq <-  ks.test(x,y)$p.value
+    less <- ks.test(x,y, alternative = "greater")$p.value
+    p_value <- max(eq, 1 - less)
+  }else if(sign == "=>"){
+    eq <-  ks.test(y,x)$p.value
+    less <- ks.test(y,x, alternative = "greater")$p.value
+    p_value <- max(eq, 1 - less)
+  }else{
+    p_value <- ks.test(y,x, alternative = "greater")$p.value
+  }
+  #negate because we want to test for the alternative
+  
   return (p_value)
 }
 
-mww_test <- function( x, y, sampleSize, lambdaX = 1, lambdaY = 1){
+t_test <- function( x, y, sign,  sampleSize,  lambdaX = 1, lambdaY = 1){
   
   if(length(y) < length(x)){
     data_length <- length(y)
@@ -61,16 +61,82 @@ mww_test <- function( x, y, sampleSize, lambdaX = 1, lambdaY = 1){
     stop("sampleSize must be less than or equal to the length of the data ")
   }
   
+  
+  signs <- c("<", "<=", "=", ">=", ">")
+  
+  if (!(sign %in% signs)){
+    stop( 'sign must be one of "<", "<=", "=", ">=", ">"')
+  }
+  
   x<-x[1:sampleSize]
   y<-y[1:sampleSize]
-  
   
   x<-x*lambdaX
   y<-y*lambdaY
   
-  # "less" tests with alternative that the mean of x is shifted to left of
-  #the mean of y 
-  p_value <- wilcox.test(x,y, paired = FALSE, alternative = "less")$p.value
+  if (sign == "="){
+    p_value <- t.test(x,y)$p.value
+  }else if(sign == "<"){
+    # "less" tests with alternative that the mean of x is less than 
+    #the mean of y
+    p_value <- t.test(x,y, alternative = "less")$p.value
+  }else if(sign == "<="){
+    eq <-  t.test(x,y)$p.value
+    less <- t.test(x,y, alternative = "less")$p.value
+    p_value <- max(eq, 1 - less)
+  }else if(sign == "=>"){
+    eq <-  t.test(y,x)$p.value
+    less <- t.test(y,x, alternative = "less")$p.value
+    p_value <- max(eq, 1 - less)
+  }else{
+    p_value <- t.test(y,x, alternative = "less")$p.value
+  }
+  #negate because we want to test for the alternative
+  return (p_value)
+}
+
+mww_test <- function( x, y, sign, sampleSize, lambdaX = 1, lambdaY = 1){
+  
+  eq_flag <- 0
+  
+  if(length(y) < length(x)){
+    data_length <- length(y)
+  }else{
+    data_length <- length(x)
+  }
+  if (sampleSize > data_length){
+    stop("sampleSize must be less than or equal to the length of the data ")
+  }
+  
+  signs <- c("<", "<=", "=", ">=", ">")
+  if (!(sign %in% signs)){
+    stop( 'sign must be one of "<", "<=", "=", ">=", ">"')
+  }
+  
+  x<-x[1:sampleSize]
+  y<-y[1:sampleSize]
+  
+  x<-x*lambdaX
+  y<-y*lambdaY
+  
+  if (sign == "="){
+    p_value <- wilcox.test(x,y)$p.value
+  }else if(sign == "<"){
+    # "greater" tests with alternative that x lies to left of y 
+    p_value <- wilcox.test(x,y, alternative = "less")$p.value
+  }else if(sign == "<="){
+    eq <-  wilcox.test(x,y)$p.value
+    less <- wilcox.test(x,y, alternative = "less")$p.value
+    # min because 
+    p_value <- max(eq, 1 - less)
+  }else if(sign == "=>"){
+    eq <-  wilcox.test(y,x)$p.value
+    less <- wilcox.test(y,x, alternative = "less")$p.value
+    p_value <- max(eq, 1 - less)
+  }else{
+    p_value <- wilcox.test(y,x, alternative = "less")$p.value
+  }
+ 
   return (p_value)
 }
 
@@ -82,9 +148,10 @@ mww_test <- function( x, y, sampleSize, lambdaX = 1, lambdaY = 1){
 # test = c("ks","mww","t"), for Kolmogorov Smirnov, wilcox and welch's t test
 # sampleSize = sample size for each test, lambdaX and lambdaY are multipliers
 #used in SPL
+# sign = c("<", "<=", "=", ">=", ">") and is the sign used in the SPL formula
 
-proportion <- function( x, y, test = c("ks", "t", "mww"), sampleSize = 500, 
-                        lambdaX = 1, lambdaY = 1){
+proportion <- function( x, y, test = c("ks", "t", "mww"), sign ,
+                        sampleSize = 500, lambdaX = 1, lambdaY = 1){
   
   possible_tests <- c("ks", "t", "mww")
   if(!(test %in% possible_tests)){
@@ -106,18 +173,17 @@ proportion <- function( x, y, test = c("ks", "t", "mww"), sampleSize = 500,
   j <- 1
   times <- (data_length/sampleSize)
   values<-rep(0,times)  
-  
-  #times <- 10
+
   for (i in 1:times){
     dist1 <- x[start:end]
     dist2 <- y[start:end]
     
     if( test == "ks"){
-      p_value <- ks_test(dist1, dist2, sampleSize, lambdaX, lambdaY)
+      p_value <- ks_test(dist1, dist2, sign, sampleSize, lambdaX, lambdaY)
     }else if( test == "mww"){
-      p_value <- mww_test(dist1, dist2, sampleSize, lambdaX, lambdaY)
+      p_value <- mww_test(dist1, dist2, sign, sampleSize, lambdaX, lambdaY)
     }else {
-      p_value <- t_test(dist1, dist2, sampleSize, lambdaX, lambdaY)
+      p_value <- t_test(dist1, dist2, sign,  sampleSize, lambdaX, lambdaY)
     }
     
     if(p_value <= 0.05){
@@ -142,7 +208,8 @@ proportion <- function( x, y, test = c("ks", "t", "mww"), sampleSize = 500,
 # sampleSizes is a vector of the sample sizes to test
 #lambdaX and lambdaY are multipliers for the data
 
-p_value_table<- function( data1, data2, sampleSizes, lambdaX=1, lambdaY=1){
+p_value_table<- function( data1, data2, sign, sampleSizes, 
+                          lambdaX=1, lambdaY=1){
   
   if(length(data2) < length(data1)){
     data_length <- length(data2)
@@ -164,21 +231,27 @@ p_value_table<- function( data1, data2, sampleSizes, lambdaX=1, lambdaY=1){
     
     sampleSize <- sampleSizes[i] 
     
-    ks <- ks_test( x, y, sampleSize, lambdaX, lambdaY)
+    ks <- ks_test( x, y, sign, sampleSize, lambdaX, lambdaY)
     if (ks != 0 ){
-      ks <- format(ks, digits = 3, scientific = T)
+      if (ks != 1){
+        ks <- format(ks, digits = 3, scientific = T)
+      }
     }  
     ks_vec[i]<-ks
     
-    mww <- mww_test( x, y, sampleSize, lambdaX, lambdaY)
+    mww <- mww_test( x, y, sign, sampleSize, lambdaX, lambdaY)
     if (mww != 0 ){
-      mww <- format(mww, digits = 3, scientific = T)
+      if (mww != 1 ){
+        mww <- format(mww, digits = 3, scientific = T)
+      }
     }  
     mww_vec[i]<- mww
     
-    t <- t_test( x, y, sampleSize, lambdaX, lambdaY)
+    t <- t_test( x, y, sign, sampleSize, lambdaX, lambdaY)
     if (t != 0 ){
-      t <- format(t, digits = 3, scientific = T)
+      if (t != 1){
+        t <- format(t, digits = 3, scientific = T)
+      }
     }  
     t_vec[i]<-t 
     
@@ -190,8 +263,8 @@ p_value_table<- function( data1, data2, sampleSizes, lambdaX=1, lambdaY=1){
 
 
 
-p_tables_different_n <- function( data_vec1, data_vec2, names_vec1, names_vec2,
-                                  sampleSizes, lambdaX=1, lambdaY=1){
+combine_p_tables <- function( data_vec1, data_vec2, names_vec1, names_vec2, 
+                              sign, sampleSizes, lambdaX=1, lambdaY=1){
   
   if (length(data_vec2) < length(data_vec1)){
     length_data_vec <- length(data_vec2)
@@ -202,35 +275,36 @@ p_tables_different_n <- function( data_vec1, data_vec2, names_vec1, names_vec2,
   tables_list <- list()
   
   for (i in 1: length_data_vec){
-    table <- p_value_table( data_vec1[[i]], data_vec2[[i]], sampleSizes, 
+    table <- p_value_table( data_vec1[[i]], data_vec2[[i]], sign, sampleSizes, 
                             lambdaX=1, lambdaY=1)
     
-  
+    sign_string <- sign_to_string(sign)
     if (lambdaX == 1){
       if(lambdaY == 1){
-        title <- textGrob(paste( "p-value for", names_vec1[[i]],
-                                 "<", names_vec2[[i]]) 
+        title <- textGrob(paste( names_vec1[[i]],
+                                 sign_string, names_vec2[[i]]) 
                           ,gp=gpar(fontsize=10))
       }else{
-        title <- textGrob(paste( "p-value for", names_vec1[[i]],
-                                 "<", lambdaY, "*", names_vec2[[i]]) 
+        title <- textGrob(paste( names_vec1[[i]],
+                                 sign_string, lambdaY, "*", names_vec2[[i]]) 
                           ,gp=gpar(fontsize=10))
       }
     }else if (lambdaY == 1){
-      title <- textGrob(paste( "p-value for", lambdaX, "*", names_vec1[[i]],
-                             "<", names_vec2[[i]]) 
+      title <- textGrob(paste( lambdaX, "*", names_vec1[[i]],
+                             sign_string, names_vec2[[i]]) 
                      ,gp=gpar(fontsize=10))
     }else{
-      title <- textGrob(paste( "p-value for", lambdaX, "*", names_vec1[[i]],
-                             "<", lambdaY, "*", names_vec2[[i]]) 
+      title <- textGrob(paste( lambdaX, "*", names_vec1[[i]],
+                             sign_string, lambdaY, "*", names_vec2[[i]]) 
                       ,gp=gpar(fontsize=10))
     }
-    padding <- unit(3,"mm")
+    padding <- unit(1,"cm")
     table <- tableGrob(table, rows = NULL)
     table <- gtable_add_rows(table, 
                              heights = grobHeight(title) + padding,
                              pos = 0)
     table <- gtable_add_grob(table, title, 1, 1, 1, ncol(table))
+    table <- gtable_add_padding(table, padding)
     
     tables_list[[i]] <- table
   }
@@ -274,3 +348,13 @@ density_plot <- function(input_data, input_names){
   }
 } 
 
+
+sign_to_string <- function(sign){
+  if(sign == "<="){
+    return("≤")
+  }else if(sign == ">="){
+    return("≥")
+  }else{
+    return(sign)
+  }
+}
