@@ -33,22 +33,39 @@ ks_test <- function( x, y, sign, sampleSize,  lambdaX = 1, lambdaY = 1){
     p_value <- ks.test(x,y)$p.value
   }else if(sign == "<"){
     # "greater" tests with alternative that x lies to left of y 
+    if(mean(x) > mean(y)){
+      return(NA)
+    }
     p_value <- ks.test(x,y, alternative = "greater")$p.value
+    
   }else if(sign == "<="){
-    eq <-  ks.test(x,y)$p.value
-    less <- ks.test(x,y, alternative = "greater")$p.value
-    p_value <- max(eq, 1 - less)
-  }else if(sign == "=>"){
-    eq <-  ks.test(y,x)$p.value
-    less <- ks.test(y,x, alternative = "greater")$p.value
-    p_value <- max(eq, 1 - less)
-  }else{
+    eq <- ks.test( x, y, alternative = "two.sided")$p.value
+    if(mean(x) > mean(y)){
+      p_value <- eq
+    }else{
+      less<- ks.test(x,y, alternative = "greater")$p.value
+      p_value <- max(eq, less)
+    }
+  }else if(sign == ">="){
+    eq <- ks.test( y, x, alternative = "two.sided")$p.value
+    if(mean(y) > mean(x)){
+      p_value <- eq
+    }else{
+      less <- ks.test(y, x, alternative = "greater")$p.value
+      p_value <- max(eq, less)
+    }
+  }else if (sign == ">"){
+    if(mean(y) > mean(x)){
+      return(NA)
+    }
     p_value <- ks.test(y,x, alternative = "greater")$p.value
+  }else{
+    stop('sign must be one of "<", "<=", "=", ">=", ">"')
   }
-  #negate because we want to test for the alternative
   
   return (p_value)
 }
+
 
 t_test <- function( x, y, sign,  sampleSize,  lambdaX = 1, lambdaY = 1){
   
@@ -77,19 +94,34 @@ t_test <- function( x, y, sign,  sampleSize,  lambdaX = 1, lambdaY = 1){
   if (sign == "="){
     p_value <- t.test(x,y)$p.value
   }else if(sign == "<"){
-    # "less" tests with alternative that the mean of x is less than 
-    #the mean of y
+    # "greater" tests with alternative that x lies to left of y 
+    if(mean(x) > mean(y)){
+      return(NA)
+    }
     p_value <- t.test(x,y, alternative = "less")$p.value
   }else if(sign == "<="){
-    eq <-  t.test(x,y)$p.value
-    less <- t.test(x,y, alternative = "less")$p.value
-    p_value <- max(eq, 1 - less)
-  }else if(sign == "=>"){
-    eq <-  t.test(y,x)$p.value
-    less <- t.test(y,x, alternative = "less")$p.value
-    p_value <- max(eq, 1 - less)
-  }else{
+    eq <- t.test( x, y, alternative = "two.sided")$p.value
+    if(mean(x) > mean(y)){
+      p_value <- eq
+    }else{
+      less<- t.test(x,y, alternative = "less")$p.value
+      p_value <- max(eq, less)
+    }
+  }else if(sign == ">="){
+    eq <- t.test( y, x, alternative = "two.sided")$p.value
+    if(mean(y) > mean(x)){
+      p_value <- eq
+    }else{
+      less <- t.test(y, x, alternative = "less")$p.value
+      p_value <- max(eq, less)
+    }
+  }else if (sign == ">"){
+    if(mean(y) > mean(x)){
+      return(NA)
+    }
     p_value <- t.test(y,x, alternative = "less")$p.value
+  }else{
+    stop('sign must be one of "<", "<=", "=", ">=", ">"')
   }
   #negate because we want to test for the alternative
   return (p_value)
@@ -123,18 +155,34 @@ mww_test <- function( x, y, sign, sampleSize, lambdaX = 1, lambdaY = 1){
     p_value <- wilcox.test(x,y)$p.value
   }else if(sign == "<"){
     # "greater" tests with alternative that x lies to left of y 
+    if(mean(x) > mean(y)){
+      return(NA)
+    }
     p_value <- wilcox.test(x,y, alternative = "less")$p.value
+    
   }else if(sign == "<="){
-    eq <-  wilcox.test(x,y)$p.value
-    less <- wilcox.test(x,y, alternative = "less")$p.value
-    # min because 
-    p_value <- max(eq, 1 - less)
-  }else if(sign == "=>"){
-    eq <-  wilcox.test(y,x)$p.value
-    less <- wilcox.test(y,x, alternative = "less")$p.value
-    p_value <- max(eq, 1 - less)
-  }else{
+    eq <- wilcox.test( x, y, alternative = "two.sided")$p.value
+    if(mean(x) > mean(y)){
+      p_value <- eq
+    }else{
+      less<- wilcox.test(x,y, alternative = "less")$p.value
+      p_value <- max(eq, less)
+    }
+  }else if(sign == ">="){
+    eq <- wilcox.test( y, x, alternative = "two.sided")$p.value
+    if(mean(y) > mean(x)){
+      p_value <- eq
+    }else{
+      less <- wilcox.test(y, x, alternative = "less")$p.value
+      p_value <- max(eq, less)
+    }
+  }else if (sign == ">"){
+    if(mean(y) > mean(x)){
+      return(NA)
+    }
     p_value <- wilcox.test(y,x, alternative = "less")$p.value
+  }else{
+    stop('sign must be one of "<", "<=", "=", ">=", ">"')
   }
  
   return (p_value)
@@ -232,27 +280,33 @@ p_value_table<- function( data1, data2, sign, sampleSizes,
     sampleSize <- sampleSizes[i] 
     
     ks <- ks_test( x, y, sign, sampleSize, lambdaX, lambdaY)
-    if (ks != 0 ){
-      if (ks != 1){
-        ks <- format(ks, digits = 3, scientific = T)
-      }
-    }  
+    if (!is.na(ks)){
+      if (ks != 0 ){
+        if (ks != 1){
+          ks <- format(ks, digits = 3, scientific = T)
+        }
+      }  
+    }
     ks_vec[i]<-ks
     
     mww <- mww_test( x, y, sign, sampleSize, lambdaX, lambdaY)
-    if (mww != 0 ){
-      if (mww != 1 ){
-        mww <- format(mww, digits = 3, scientific = T)
-      }
-    }  
+    if (!is.na(mww)){
+      if (mww != 0 ){
+        if (mww != 1 ){
+          mww <- format(mww, digits = 3, scientific = T)
+        }
+      }  
+    }
     mww_vec[i]<- mww
     
     t <- t_test( x, y, sign, sampleSize, lambdaX, lambdaY)
-    if (t != 0 ){
-      if (t != 1){
-        t <- format(t, digits = 3, scientific = T)
-      }
-    }  
+    if(!is.na(t)){
+      if (t != 0 ){
+        if (t != 1){
+          t <- format(t, digits = 3, scientific = T)
+        }
+      }  
+    }
     t_vec[i]<-t 
     
   }

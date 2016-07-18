@@ -23,7 +23,6 @@ insertionSort_1000<- insertionSort_1000[10001:110000]
 insertionSort_5000<- insertionSort_5000[10001:110000]
 
 
-
 is_data <- list()
 is_data[[1]] <- insertionSort_100
 is_data[[2]] <- insertionSort_500
@@ -48,8 +47,9 @@ is_names[[2]] <- "insertionSort n=500"
 is_names[[3]] <- "insertionSort n=1000"
 is_names[[4]] <- "insertionSort n=5000"
 
+sampleSizes <- c(100,500,1000,5000,10000)
 
-hist(insertionSort_5000)
+# -----------------------------------------------------------------------------
 
 edf_ps_100<-ecdf(dualPivotSort_100)
 edf_ps_500<-ecdf(dualPivotSort_500)
@@ -85,13 +85,15 @@ plot(edf_ps_5000,main = "n = 5000",
 lines(edf_is_5000,  
       col.01line = "gray70", pch = 19, col = "blue", verticals = "TRUE")
 
-sampleSizes <- c(100,500,1000,5000,10000)
-table <- p_value_table(dualPivotSort_100,  insertionSort_100, "<=", 500,1 ,1)
+
+table <- p_value_table(dualPivotSort_1000,  insertionSort_1000, ">", 500,1 ,1)
 table
 
-a <-combine_p_tables( is_data, is_data, is_names, is_names, "=" , sampleSizes)
+a <-combine_p_tables( ps_data, is_data, ps_names, is_names, "<" , sampleSizes)
+mean(dualPivotSort_100)
+mean(insertionSort_100)
 
-a
-
+a <- ks_test(insertionSort_100, dualPivotSort_100, ">=", 500)
+a<- t.test(0.9999999999999*dualPivotSort_100,dualPivotSort_100)
 
 
